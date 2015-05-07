@@ -22,7 +22,7 @@ scraper.get(ADDRESS) do |search_page|
   # scrape the page
   form = search_page.form_with(:id => 'searchform') do |search|
     search.query = 'Garden'
-    search.minask = 250
+    search.minAsk = 250
     search.maxAsk = 1500
   end
   result_page = form.submit
@@ -35,7 +35,8 @@ scraper.get(ADDRESS) do |search_page|
     name = link.text.strip
     url = "http://sfbay.craigslist.org" + link.attributes["href"].value
     price = result.search('span.price').text
-    location = result.search('span.pnr')[3..-13]
+    location = result.search('span.pnr').text[3..-13]
+    puts location
 
     results << [name, url, price, location]
   end

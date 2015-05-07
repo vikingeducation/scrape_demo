@@ -6,7 +6,8 @@ Scraping is for when you want data out of the Web that the Web doesn't feel like
 
 Ruby is a popular scripting language that also underlies the Rails framework, and it has some great scraping tools in its own right. We're going to talk about Mechanize, the Ruby gem (a.k.a. module) that makes scraping the Web very very easy.
 
-Let's use an example of a very famous website, Craigslist. It's kind of a pain to go search for apartments manually. Wouldn't it be nice to just run a little script that grabbed all the apartments that you wanted (keywords, neighborhood and price point) and added them to a spreadsheet?
+Let's use an example of a very famous apartment hunting website that rhymes with "Schmaigslist". It's kind of a pain to go search for apartments manually. Wouldn't it be nice to just run a little script that grabbed all the apartments that you wanted (keywords, neighborhood and price point) and added them to a spreadsheet?
+
 
 So let's move on and check out the necessarily tools:
 
@@ -163,7 +164,7 @@ First, here's the results, and then a quick walkthrough to explain them:
 name = link.text.strip
 url = "http://sfbay.craigslist.org" + link.attributes["href"].value
 price = result.search('span.price').text
-location = result.search('span.pnr')[3..-13]
+location = result.search('span.pnr').text[3..-13]
 
 results << [name, url, price, location]
 ```
@@ -221,7 +222,7 @@ scraper.get(ADDRESS) do |search_page|
     name = link.text.strip
     url = "http://sfbay.craigslist.org" + link.attributes["href"].value
     price = result.search('span.price').text
-    location = result.search('span.pnr')[3..-13]
+    location = result.search('span.pnr').text[3..-13]
 
     #save the results
     results << [name, url, price, location]
