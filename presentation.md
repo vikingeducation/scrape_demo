@@ -4,7 +4,7 @@ This mini-lesson is an introduction to one of the more powerful ways to make the
 
 Scraping is for when you want data out of the Web that the Web doesn't feel like formatting your way. If you can imagine yourself going to a website, clicking around in a repetitive way, taking annoyingly mechanical notes into a text file or spreadsheet, and ending up with the information you actually want an hour later, scraping is probably the right tool for the job.
 
-Ruby is a popular scripting language that also underlies the Rails framework, and it has some great scraping tools in its own right. We're going to talk about Mechanize, the Ruby gem (a.k.a. module) that makes scraping the Web very very easy.
+Ruby is a popular scripting language that also underlies the Rails framework, and it has some great scraping tools in its own right. We're going to talk about [Mechanize](https://github.com/sparklemotion/mechanize), the Ruby gem (a.k.a. module) that makes scraping the Web very very easy.
 
 Let's use an example of a very famous apartment hunting website that rhymes with "Schmaigslist". It's kind of a pain to go search for apartments manually. Wouldn't it be nice to just run a little script that grabbed all the apartments that you wanted (keywords, neighborhood and price point) and added them to a spreadsheet?
 
@@ -65,7 +65,7 @@ First, we set up a Ruby script. These all end in `.rb`, so let's call it `scrape
 
 For the sake of being extremely accessible to various readers, we're going to write this scraper in an entirely linear, procedural style, but if you're used to object-oriented programming in Ruby, it should be pretty trivial to wrap all this in a portable, modular ApartmentScraper object.
 
-We'll start by using `require` statements to call in the various modules we need for the script. That includes: Rubygems, which manages our various packages of code, our Mechanize gem, the Pry debugger gem that lets you start up a debugging console at any point in your script, and a built-in CSV library that will later allow us to save our output in highly-portable spreadsheet format.
+We'll start by using `require` statements to call in the various modules we need for the script. That includes: Rubygems, which manages our various packages of code, our [Mechanize](https://github.com/sparklemotion/mechanize) gem, the Pry debugger gem that lets you start up a debugging console at any point in your script, and a built-in CSV library that will later allow us to save our output in highly-portable spreadsheet format.
 
 ```language-ruby
 require 'rubygems'
