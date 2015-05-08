@@ -1,26 +1,45 @@
-### Why Scrape
+## Web Scraping Craigslist with Ruby
 
-This mini-lesson is an introduction to one of the more powerful ways to make the Internet's data bend to your will, using actually pretty minimal coding skills. All it takes is enough time and patience to figure out what you're going for.
+This mini-lesson is an introduction to one of the more powerful ways to make the Internet's data bend to your will, using pretty minimal coding skills. All it takes is enough time and patience to figure out what you're going for.  
 
-Scraping is for when you want data out of the Web that the Web doesn't feel like formatting your way. If you can imagine yourself going to a website, clicking around in a repetitive way, taking annoyingly mechanical notes into a text file or spreadsheet, and ending up with the information you actually want an hour later, scraping is probably the right tool for the job.
+We'll use an example of a very famous apartment hunting website that rhymes with "Schmaigslist" since it's kind of a pain to go search for apartments manually. Wouldn't it be nice to just run a little script that grabbed all the apartments that you wanted (keywords, neighborhood and price point) and added them to a spreadsheet for you?
 
-Ruby is a popular scripting language that also underlies the Rails framework, and it has some great scraping tools in its own right. We're going to talk about [Mechanize](https://github.com/sparklemotion/mechanize), the Ruby gem (a.k.a. module) that makes scraping the Web very very easy.
-
-Let's use an example of a very famous apartment hunting website that rhymes with "Schmaigslist". It's kind of a pain to go search for apartments manually. Wouldn't it be nice to just run a little script that grabbed all the apartments that you wanted (keywords, neighborhood and price point) and added them to a spreadsheet?
+We assume a familiarity with HTML markup and the basic building blocks of programming.
 
 
-So let's move on and check out the necessarily tools:
+### Our Tools
+
+First of all, let's see what we're working with here anyway:
+
+"Scraping" is the act of pulling data from a website programmatically.  If you find yourself going to a page, clicking around in a repetitive way, taking annoyingly mechanical notes into a text file or spreadsheet, and only ending up with the information you actually want an hour or two later, then scraping is probably the right tool for the job.
+
+"Ruby" is a popular scripting language that also underlies the Rails framework, and it has some great scraping tools in its own right. 
+
+"[Mechanize](https://github.com/sparklemotion/mechanize)" is the main Ruby gem (aka code library) we'll feature here.  It makes scraping very easy for you. 
 
 
-### Setup
 
-- First, make sure you have a version of Ruby on your machine (OSX has it by default, you can definitely grab it with apt-get in Ubuntu)
+### System Setup
+
+Let's get a few setup things out of the way to make sure we're all on the same page:
+
+- First, make sure you have a version of Ruby on your machine (OSX has it by default, you can definitely grab it with `apt-get` in Ubuntu)
 - Make sure you know the basics of Ruby as a scripting language. If you're not familiar with it, you can go check out [Ruby in 100 Minutes](http://tutorials.jumpstartlab.com/projects/ruby_in_100_minutes.html) for the basic syntax. If you need more, go check out [Viking Code School's Web Markup and Coding prep course](http://www.vikingcodeschool.com/web-markup-and-coding), which will also give you some extra practice with HTML and CSS if you're weak on those.
-- go into your command line and type `gem install mechanize` and `gem install pry-byebug`. if your console doesn't recognize those commands, type `brew install rubygems` or use your system's package manager to grab the rubygems package
-- You also want a browser like Chrome or Firefox which has an extensive set of developer tools for debugging
+- Go into your command line and type:
+
+    ```language-bash
+    gem install mechanize
+    gem install pry-byebug
+    ```
+
+    If your console doesn't recognize those commands, type `brew install rubygems` or use your system's package manager to grab the rubygems package
+
+- You should also use a browser like Chrome or Firefox which has an extensive set of developer tools for debugging.
 
 
 ### Identifying Your Scraping Path
+
+Okay, we're ready to go.  Now what?
 
 Before you write a script to scrape a page, you need to identify the actual path a normal user would take to get the information you're looking for. This section will take you through the whole research process to get you ready to write your script.
 
@@ -29,21 +48,27 @@ Before you write a script to scrape a page, you need to identify the actual path
 
 First up, you want to temporarily turn off JavaScript in your browser. Since the tool we're going to use doesn't use JavaScript, you want to make sure that you're only seeing in the browser what your scraper can "see".
 
-Instructions in Chrome: Click the Chrome menu in the top right hand corner of your browser ---> select "Settings" ----> click "Show Advanced Settings" ---> in the "Privacy" section, click "Content settings" ----> In the Javascript section, click "Do not allow any site to run JavaScript". (Remember to undo this later!)
+Instructions in Chrome: 
 
-If you're using another browser, just google for "how to turn off JavaScript in BROWSERNAME" and you will have instructions in 10 seconds flat.
+1. Click the Chrome menu in the top right hand corner of your browser
+2. Select "Settings"
+3. Click "Show Advanced Settings"
+4. In the "Privacy" section, click "Content settings"
+5. In the JavaScript section, click "Do not allow any site to run JavaScript". (Remember to undo this later!)
+
+If you're using another browser, just Google for "how to turn off JavaScript in BROWSERNAME" and you will have instructions in 10 seconds flat.
 
 
 #### The Information Scavenger Hunt
 
-Next up, it's time to walk through whatever actual process you would be using if you *didn't* have a scraper at your disposal, taking a few notes along the way for pieces of information you're going to need.
+Before we can programmatically scrape a page, we need to know what we actually want to pull off of it. The only way to do so is by first inspecting the page manually and taking a few notes along the way.
 
-What you want at the end of it:
+In particular, you'll want to note a few key things:
 
-1. *What page do you actually need to start on?* Grab the actual address from your browser window. If you click through a couple of pages to a common starting point for all your searches, grab *that* address, not the initial landing page.
-2. *The IDs of any forms you need to input to.* Just use your browser's "inspect element" feature to figure this out.
-3. The names of any input fields you actually fill in on those forms. (inspect element is your friend)
-4. The IDs or classes of the results you're actually trying to grab on the results page.
+1. *What page do you need to start on?* Grab the address from your browser window. If you click through a couple of pages to a common starting point for all your searches, grab *that* address, not the initial landing page.
+2. *The IDs of any form tags you need to input information to.* Just use your browser's "inspect element" feature to figure this out.
+3. The names of any input fields you fill in on those forms. (inspect element is your friend)
+4. The IDs or classes of the results you're trying to grab on the results page.
 
 Let's now walk through the Craigslist example, taking exactly those four steps.
 
@@ -63,9 +88,14 @@ First, we set up a Ruby script. These all end in `.rb`, so let's call it `scrape
 
 #### Setting Up the Script
 
-For the sake of being extremely accessible to various readers, we're going to write this scraper in an entirely linear, procedural style, but if you're used to object-oriented programming in Ruby, it should be pretty trivial to wrap all this in a portable, modular ApartmentScraper object.
+For the sake of being extremely accessible to various readers, we're going to write this scraper in an entirely linear, procedural style, but if you're used to object-oriented programming in Ruby, it should be pretty trivial to wrap all this in a portable, modular `ApartmentScraper` object.
 
-We'll start by using `require` statements to call in the various modules we need for the script. That includes: Rubygems, which manages our various packages of code, our [Mechanize](https://github.com/sparklemotion/mechanize) gem, the Pry debugger gem that lets you start up a debugging console at any point in your script, and a built-in CSV library that will later allow us to save our output in highly-portable spreadsheet format.
+We'll start by using `require` statements to call in the various modules we need for the script. That includes: 
+
+1. Rubygems, which manages our various packages of code
+2. The [Mechanize](https://github.com/sparklemotion/mechanize) gem
+3. The Pry Debugger gem that lets you start up a debugging console at any point in your script
+4. A built-in CSV library that will later allow us to save our output in highly-portable spreadsheet format.
 
 ```language-ruby
 require 'rubygems'
@@ -86,9 +116,9 @@ results = []
 
 The scraper is a new Mechanize object that has all the powers of the Mechanize gem. We'll get into the special methods it contains soon enough.
 
-That `history_added` line is a callback, a method that runs every time you finish visiting a new page. What it's doing is *rate limiting* your scraping, so that you stop and wait half a second between each time you visit a page. If you go much faster than that, many sites will decide your scraper is a bot that might be DDOSing them or otherwise up to no good, so this way you just look like a human clicking through things quickly.
+That `history_added` line is a callback, a method that runs every time you finish visiting a new page. What it's doing is *rate limiting* your scraping, so that you stop and wait half a second between each time you visit a page. If you go much faster than that, many sites will decide your scraper is a bot that might be [DDOSing](http://en.wikipedia.org/wiki/Denial-of-service_attack) them or otherwise up to no good, so this way you just look like a human clicking through things quickly.
 
-ADDRESS is a constant that represents the starting address of your scraper and simplifies your code later on. This way, it's only hard-coded in one place. If you had been scraping a site in more varied ways (for more than just apartments). For later uses, we're also grabbing a BASE_URL constant only consists of the domain itself, 'http://sfbay.craigslist.org'.
+`ADDRESS` is a constant that represents the starting address of your scraper and simplifies your code later on. This way, it's only hard-coded in one place. If you had been scraping a site in more varied ways (for more than just apartments). For later uses, we're also grabbing a `BASE_URL` constant only consists of the domain itself, 'http://sfbay.craigslist.org'.
 
 Results is an empty array that will soon contain all your cool scraped stuff.
 
@@ -110,7 +140,9 @@ That means that your scraper object is sending a GET request to your hardcoded `
 
 #### Navigating Your First Form
 
-Next up, we find the form with **id="searchform"**, like we discovered in our first investigation of the site. There is a `form_with` method on any page object created by Mechanize. It returns an object representing the form on the page matching those parameters. Pass in an id, and we get that specific form back as a Ruby object. However, we'll take one step further and pass it a block of configuration code, which is very common Ruby style. In that configuration code, we can directly fill in form fields by name. (Remember how we grabbed the field names in the setup?) You'll see below how that works:
+Next up, we find the form with **id="searchform"**, like we discovered in our first investigation of the site. There is a `form_with` method on any page object created by Mechanize which returns an object representing the form on the page matching those parameters. Pass in an id, and we get that specific form back as a Ruby object. 
+
+However, we'll take one step further and pass it a block of configuration code, which is very common Ruby style. In that configuration code, we can directly fill in form fields by name. (Remember how we grabbed the field names in the setup?) You'll see below how that works:
 
 ```language-ruby
 search_form = search_page.form_with(:id => 'searchform') do |search|
@@ -138,17 +170,21 @@ Right after that last `results_page = search_form.submit` line, add the line:
 
 First, just type `results_page` and see what happens. Pry has built-in object inspection, so it'll show you a giant object full of instance variables. Check out properties of the object like `forms` or `links` or the raw HTML with `body`.
 
-But really, what you're looking to do is to grab a collection of all the results that you can then parse for data. You know each result is wrapped in a `<p class=row>` from initial investigations.
+But really, what you're looking to do is to grab a collection of all the results that you can then parse for data. You know each result is wrapped in a `<p class="row">` from initial investigations.
 
-Luckily, your results_page also has a `search` method, thanks to the [Nokogiri gem]() it is based on, which works much like jQuery and other HTML parsers. In English, you can input the name of a CSS tag or class or ID and it will grab you anything that matches. After some fiddling, we discover that `results_page.search('p.row')` will give us an array of all the paragraphs of class "row". Then, we run an `each` iterator through all of those rows, grabbing the actual link inside that contains all the useful information for each result. That happens to be the SECOND link inside of the result. What that looks like in code:
+Luckily, your results_page also has a `search` method, thanks to the [Nokogiri gem](http://www.nokogiri.org/) it is based on, which works much like jQuery and other HTML parsers. In English, you can input the name of a CSS tag or class or ID and it will grab you anything that matches. 
+
+After some fiddling, we discover that `results_page.search('p.row')` will give us an array of all the paragraphs of class "row". Then, we run an `each` iterator through all of those rows, grabbing the actual link inside that contains all the useful information for each result. That happens to be the SECOND link inside of the result. What that looks like in code:
 
 ```language-ruby
+...
 raw_results = result_page.search('p.row')
 raw_results.each do |result|
   link = result.search('a')[1]
   # going to do the rest of the useful stuff
   # in here in a minute
 end
+...
 ```
 
 
@@ -161,21 +197,31 @@ What can you grab from that initial search page? The link itself, the title of t
 First, here's the results, and then a quick walkthrough to explain them:
 
 ```language-ruby
-name = link.text.strip
-url = "http://sfbay.craigslist.org" + link.attributes["href"].value
-price = result.search('span.price').text
-location = result.search('span.pnr').text[3..-13]
+...
+raw_results.each do |result|
+  ...
+  name = link.text.strip
+  url = "http://sfbay.craigslist.org" + link.attributes["href"].value
+  price = result.search('span.price').text
+  location = result.search('span.pnr').text[3..-13]
 
-results << [name, url, price, location]
+  results << [name, url, price, location]
+  ...
+end
+...
 ```
 
 So the name is the easy part. It's just the text of the link, and you use `.strip` to remove extra whitespace.
 
-The link tag has an `attributes` variable on it, which is basically a hash table. Poking around that hash table in Pry, we discover it has an 'href', which is exactly pulled from the text of the tag. The result of that is still an object, but its `value` is the actual text of the link. *The only easy way to do this is to keep interrogating objects in Pry and use the `inspect` method on anything you're confused about*. It may take a while, but you will eventually find the property you need. Additionally, since it's a relative link, we concatenate it with the BASE_URL we saved at the top of the file to make it a link you can visit from anywhere.
+The link tag has an `attributes` variable on it, which is basically a hash. Poking around that hash in Pry, we discover it has an 'href', which is exactly pulled from the text of the tag. The result of that is still an object, but its `value` is the actual text of the link. 
+
+*The only easy way to do this is to keep interrogating objects in Pry and use the `inspect` method on anything you're confused about*. It may take a while, but you will eventually find the property you need. Additionally, since it's a relative link, we concatenate it with the BASE_URL we saved at the top of the file to make it a link you can visit from anywhere.
 
 Finding the price involves going back to the browser and noticing that the actual price is inside a span of class "price". So we search our specific result for 'span.price', then get its `text`, which includes a dollar sign. If we want to turn it into a number later, we can, but that's not necessary right now.
 
-Finally, more use of Inspect Element finds that there is only one way to get the neighborhood location: by grabbing 'span.pnr'. What's the problem? That class="pnr" `<span>` doesn't just contain the neighborhood, but also some unrelated text: `"  (sunset / parkside)    pic  map"`. There are cleaner and less clean ways to solve this problem, but we're going to do a quick-and-dirty approach that may not always work. You can play around with other methods. We'll just use a range on the string that removes the first 3 characters and the last 12, all of which appear to be filler in all of the tags we've seen so far. That gets us just what's inside the parentheses, such as: 'sunset / parkside'.
+Finally, more use of Inspect Element finds that there is only one way to get the neighborhood location: by grabbing `span.pnr`.  Unfortunately, the `<span>` with `class="pnr"` doesn't just contain the neighborhood, but also some unrelated text: `"  (sunset / parkside)    pic  map"`. 
+
+There are cleaner and less clean ways to solve this problem, but we're going to do a quick-and-dirty approach that may not always work. You can play around with other methods. We'll just use a range on the string that removes the first 3 characters and the last 12, all of which appear to be filler in all of the tags we've seen so far. That gets us just what's inside the parentheses, such as: 'sunset / parkside'.
 
 Finally, we push this row of result to the master results object (that's the << operator). But realizing that it would be nice to have headings for each column of results, we hop back up to when we defined the array in the first place and add `results << ['Name', 'URL', 'Price', 'Location']`.
 
@@ -230,7 +276,8 @@ scraper.get(ADDRESS) do |search_page|
 end
 ```
 
-####Saving Your File
+
+#### Saving Your File
 
 One thing you don't realize is how easy we've made it for you to save this stuff into a file. A Comma-Separated-Value spreadsheet is already formatted the way your two-dimensional array looks: the first row is an array of headings, and all the rest of the rows are your entries. There is a convenient CSV library for Ruby, and we've already included it, so all we need to do is use its methods to save a new file.
 
