@@ -24,17 +24,38 @@ First of all, let's see what we're working with here anyway:
 Let's get a few setup things out of the way to make sure we're all on the same page:
 
 - First, make sure you have a version of Ruby on your machine (OSX has it by default, you can definitely grab it with `apt-get` in Ubuntu)
+- **Use a Ruby version manager.** It is recommended that you install and use a Ruby version manager like [RVM](https://rvm.io/rvm/install) or [RBENV](https://github.com/rbenv/rbenv) to switch between versions on Ruby. This is because you'll need to install gems for and work with various versions of Ruby. You'll also notice that attempting to install gems for your system version of Ruby causes [permissions errors](http://stackoverflow.com/a/32253142/5113832). Using a version manager will provide a scalable solution to these problems. At the time of this writing the latest stable version of Ruby is 2.3.1. Once you have a version manager installed, use it to install the latest stable version of Ruby and switch to it.
 - Make sure you know the basics of Ruby as a scripting language. If you're not familiar with it, you can go check out [Ruby in 100 Minutes](http://tutorials.jumpstartlab.com/projects/ruby_in_100_minutes.html) for the basic syntax. If you need more, go check out [Viking Code School's Web Markup and Coding prep course](http://www.vikingcodeschool.com/web-markup-and-coding), which will also give you some extra practice with HTML and CSS if you're weak on those.
-- Go into your command line and type:
+- Once you have a working version of Ruby go into your command line and type:
 
     ```language-bash
-    gem install mechanize
-    gem install pry-byebug
+    $ gem install bundler
     ```
 
-    If your console doesn't recognize those commands, type `brew install rubygems` or use your system's package manager to grab the rubygems package
+- This should install [Bundler](http://bundler.io). This will allow you to manage [gems](https://rubygems.org) for our scraping project.
+- Now run this command to create a `Gemfile`:
 
-- You should also use a browser like Chrome or Firefox which has an extensive set of developer tools for debugging.
+    ```language-bash
+    $ bundle init
+    ```
+- You'll now notice there is a `Gemfile` in your project directory. This is where we can specify the gems we want to use in our project. Make sure your `Gemfile` looks like this:
+
+    ```language-ruby
+    # A sample Gemfile
+    source "https://rubygems.org"
+
+    gem 'mechanize'
+    gem 'csv'
+    gem 'pry-byebug'
+    ```
+
+- Now run this command to install the gems:
+
+    ```language-bash
+    $ bundle install
+    ```
+
+- You should also be using a browser like Chrome or Firefox which has an extensive set of developer tools for debugging.
 
 
 ### Identifying Your Scraping Path
@@ -73,9 +94,9 @@ In particular, you'll want to note a few key things:
 Let's now walk through the Craigslist example, taking exactly those four steps.
 
 1. Visit the main Craigslist site for your town. For us, that's San Francisco, so we'll go to http://sfbay.craigslist.org/sfc/, the San Francisco branch of the San Francisco Bay Area. But clicking around, we see an Apartments heading, and under that heading there's the "apts/housing" link. Clicking through there, we get a very nice direct search page, whose address is **[http://sfbay.craigslist.org/search/sfc/apa](http://sfbay.craigslist.org/search/sfc/apa).** Mission 1 accomplished.
-2. Conveniently inspecting elements, it appears that *all* the form fields are contained in a single `<form>` with **id="searchform"**. Later on, that's going to allow us to target the right form on this page using our scraper. That's two down.
+2. Conveniently inspecting elements, it appears that *all* the form fields are contained in a single `<form>` with `id="searchform"`. Later on, that's going to allow us to target the right form on this page using our scraper. That's two down.
 3. The actual fields we might want to fill in, we hope they have explicit names set.
-    1. The minimum dollar amount turns out to have the name `minAsk`, while the maximum is `maxAsk`.
+    1. The minimum dollar amount turns out to have the name `min_price`, while the maximum is `max_price`.
     2. There are checkboxes for neighborhoods whose input elements look like `<input id='sunset_/_parkside_28'>`, so we'll take down any of those if we want to filter by neighborhood.
     3. There's also the main query field, an input whose name is "query". These fields are often named "query" or just "q"
 4. Inspecting the actual results of a test query, the apartment listings all seem to be inside of `<p class="row">`'s who are all inside of a `<div class="content">`. That means that when the time comes, we can just look inside that container div and grab a collection of those row paragraphs. More detailed results parsing will have to wait till we have something to parse.
@@ -92,13 +113,11 @@ For the sake of being extremely accessible to various readers, we're going to wr
 
 We'll start by using `require` statements to call in the various modules we need for the script. That includes: 
 
-1. Rubygems, which manages our various packages of code
-2. The [Mechanize](https://github.com/sparklemotion/mechanize) gem
-3. The Pry Debugger gem that lets you start up a debugging console at any point in your script
-4. A built-in CSV library that will later allow us to save our output in highly-portable spreadsheet format.
+1. The [Mechanize](https://github.com/sparklemotion/mechanize) gem
+1. The Pry Debugger gem that lets you start up a debugging console at any point in your script
+1. A built-in CSV library that will later allow us to save our output in highly-portable spreadsheet format.
 
 ```language-ruby
-require 'rubygems'
 require 'mechanize'
 require 'pry-byebug'
 require 'csv'
@@ -140,19 +159,19 @@ That means that your scraper object is sending a GET request to your hardcoded `
 
 #### Navigating Your First Form
 
-Next up, we find the form with **id="searchform"**, like we discovered in our first investigation of the site. There is a `form_with` method on any page object created by Mechanize which returns an object representing the form on the page matching those parameters. Pass in an id, and we get that specific form back as a Ruby object. 
+Next up, we find the form with `id="searchform"`, like we discovered in our first investigation of the site. There is a `form_with` method on any page object created by Mechanize which returns an object representing the form on the page matching those parameters. Pass in an id, and we get that specific form back as a Ruby object. 
 
 However, we'll take one step further and pass it a block of configuration code, which is very common Ruby style. In that configuration code, we can directly fill in form fields by name. (Remember how we grabbed the field names in the setup?) You'll see below how that works:
 
 ```language-ruby
 search_form = search_page.form_with(:id => 'searchform') do |search|
-  search.query = "Garden Apartment"
-  search.minAsk = 250
-  search.maxAsk = 1500
+  search['query'] = 'Garden'
+  search['min_price'] = 250
+  search['max_price'] = 1500
 end
 ```
 
-The result? We have a `search_form` object with two fields filled out. This is going to be our test run, so we just make up some parameters for the query, minAsk and maxAsk fields.
+The result? We have a `search_form` object with two fields filled out. This is going to be our test run, so we just make up some parameters for the query, min_price and max_price fields.
 
 With the form all set to go, we can submit the form and again return a new object representing the results page, using a convenient `submit` method found on Mechanize form objects:
 
@@ -230,47 +249,53 @@ So now we have a bunch of data. Let's move on to saving it to a file you can rea
 But first, your entire script so far:
 
 ```language-ruby
-
-require 'rubygems'
 require 'mechanize'
 require 'csv'
 require 'pry-byebug'
 
+# Instantiate a new web scraper with Mechanize
 scraper = Mechanize.new
 
-# Mechanize setup to rate limit your scraping to once every half-second
+# Mechanize setup to rate limit your scraping 
+# to once every half-second.  
+# THIS IS IMPORTANT OR YOU WILL BE IP BANNED!
 scraper.history_added = Proc.new { sleep 0.5 }
 
 # hard-coding an address for your scraper
 ADDRESS = 'http://sfbay.craigslist.org/search/sfc/apa'
 
+# Set up an array to store all of our results
 results = []
+
+# Make the first row of the array the column names
 results << ['Name', 'URL', 'Price', 'Location']
 
-
-# SCRAPING TIME
+# SCRAPING TIME!!!!
 scraper.get(ADDRESS) do |search_page|
 
-  # work with the form
+  # Use Mechanize to enter search terms into the form fields
   form = search_page.form_with(:id => 'searchform') do |search|
-    search.query = 'Garden'
-    search.maxAsk = 1500
-  end
-  result_page = form.submit
 
-  # get the results
+    search['query'] = 'Garden'
+    search['min_price'] = 250
+    search['max_price'] = 1500
+  end
+  result_page = form.submit   
+
+  # Get results
   raw_results = result_page.search('p.row')
 
-  #parse the results
+  # Parse results
   raw_results.each do |result|
     link = result.css('a')[1]
-
     name = link.text.strip
     url = "http://sfbay.craigslist.org" + link.attributes["href"].value
     price = result.search('span.price').text
     location = result.search('span.pnr').text[3..-13]
 
-    #save the results
+    puts location
+
+    # Save results
     results << [name, url, price, location]
   end
 end
@@ -285,9 +310,9 @@ The text of that file-saving apparatus looks like this:
 
 ```language-ruby
 CSV.open("filename.csv", "w+") do |csv_file|
-    results.each do |row|
-        csv_file << row
-    end
+  results.each do |row|
+    csv_file << row
+  end
 end
 ```
 
@@ -302,3 +327,18 @@ Now you have a CSV file you can open in any spreadsheet program, upload to Googl
 All you have to do to change your scrape is to go into the form section and change your form inputs and queries. If you're a little more seasoned, you can redesign this to pass in variables instead, wrap object-orientation around this process, whatever you'd like to modularize your code.
 
 In the meantime, you have a custom list of apartments you can refresh and filter in a spreadsheet without ever firing up a browser. That's pretty cool.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
